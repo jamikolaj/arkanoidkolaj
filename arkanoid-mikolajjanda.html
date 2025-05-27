@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gra Arkanoid</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background: radial-gradient(circle, #000000, #333300);
+            color: #FFFF00;
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        #canvas {
+            display: block;
+            border: 2px solid #FFFF00;
+            background-color: #000000;
+        }
+
+        #restart {
+            display: none;
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #FFFF00;
+            color: #000000;
+            border: none;
+            cursor: pointer;
+        }
+
+        #restart:hover {
+            background-color: #cccc00;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <button id="restart">Zagraj ponownie</button>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const restartBtn = document.getElementById('restart');
+
+        let platformX, gameOver, ballOnPlatform, position, dirX, dirY, blocks;
+        const ballRadius = 10;
+        const blockWidth = 80;
+        const blockHeight = 30;
+        const platformWidth = 100;
+        const platformSpeed = 8;
+        let leftPressed = false;
+        let rightPressed = false;
+
+        function initGame() {
+            platformX = 350;
+            gameOver = false;
+            ballOnPlatform = true;
+            position = { x: platformX + 50, y: canvas.height - 30 };
+            dirX = 3;
+            dirY = -3;
+            restartBtn.style.display = 'none';
+            blocks = [];
+
+            const columns = 8;
+            const rows = 5;
+            const padding = 10;
+            const totalWidth = columns * blockWidth + (columns - 1) * padding;
+            const startX = (canvas.width - totalWidth) / 2;
+            const startY = 80;
+
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < columns; col++) {
+                    blocks.push({
+                        x: startX + col * (blockWidth + padding),
+                        y: startY + row * (blockHeight + padding),
+                        visible: true
+                    });
+                }
+            }
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'a') leftPressed = true;
+            if (e.key === 'd') rightPressed = true;
+            if (e.key === ' ' && ballOnPlatform) ballOnPlatform = false;
+        });
+
+        document.addEventListener('keyup', e => {
+            if (e.key === 'a') leftPressed = false;
+            if (e.key === 'd') rightPressed = false;
+        });
+
+        restartBtn.addEventListener('click', () => {
+            initGame();
+            draw();
+        });
+
+        function draw() {
+            if (gameOver) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = "black";
+                ctx.font = "20px Arial";
+                ctx.fillStyle = "#FFFF00";
+                ctx.fillText("Przegrałeś! Spróbuj ponownie!", canvas.width / 2 - 120, canvas.height / 2);
+                restartBtn.style.display = 'block';
+                return;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            
+            if (leftPressed && platformX > 0) platformX -= platformSpeed;
+            if (rightPressed && platformX < canvas.width - platformWidth) platformX += platformSpeed;
+
+          
+            blocks.forEach(block => {
+                if (block.visible) {
+                    ctx.fillStyle = "#FFFF00";
+                    ctx.fillRect(block.x, block.y, blockWidth, blockHeight);
+                }
+            });
+
+            
+            ctx.fillStyle = "yellow";
+            ctx.beginPath();
+            ctx.arc(position.x, position.y, ballRadius, 0, 2 * Math.PI);
+            ctx.fill();
+
+            
+            ctx.fillStyle = "#FFD700";
+            ctx.fillRect(platformX, canvas.height - 20, platformWidth, 10);
+
+            
+            if (ballOnPlatform) {
+                position.x = platformX + 50;
+                position.y = canvas.height - 30;
+            } else {
+                moveBall();
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        function moveBall() {
+            position.x += dirX;
+            position.y += dirY;
+
+            
+            if (position.x <= ballRadius || position.x >= canvas.width - ballRadius) dirX = -dirX;
+            if (position.y <= ballRadius) dirY = -dirY;
+
+            
+            if (position.y >= canvas.height - 30 - ballRadius &&
+                position.x >= platformX && position.x <= platformX + platformWidth) {
+                dirY = -dirY;
+            }
+
+            
+            if (position.y >= canvas.height) {
+                gameOver = true;
+            }
+
+           
+            blocks.forEach(block => {
+                if (block.visible &&
+                    position.x >= block.x && position.x <= block.x + blockWidth &&
+                    position.y >= block.y && position.y <= block.y + blockHeight) {
+                    block.visible = false;
+                    dirY = -dirY;
+                }
+            });
+        }
+
+        initGame();
+        draw();
+    </script>
+</body>
+</html>
